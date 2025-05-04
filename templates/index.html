@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analisis Sentimen Komentar Instagram</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: #f5f7fa;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #3498db, #2ecc71);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab {
+            padding: 15px 30px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            border-bottom: 3px solid #3498db;
+            color: #3498db;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .metric-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 600;
+            margin: 10px 0;
+        }
+
+        .positive { color: #2ecc71; }
+        .negative { color: #e74c3c; }
+        .neutral { color: #3498db; }
+
+        .analysis-section {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            resize: vertical;
+            min-height: 100px;
+            font-size: 1rem;
+        }
+
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: background 0.3s ease;
+        }
+
+        button:hover {
+            background: #2980b9;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .result.positive { background: #e8f5e9; color: #2ecc71; }
+        .result.negative { background: #ffebee; color: #e74c3c; }
+        .result.neutral { background: #e3f2fd; color: #3498db; }
+
+        .charts {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .wordcloud-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .wordcloud {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .wordcloud img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .comments-section {
+            margin-top: 30px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .comment-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .comment-item {
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .comment-text {
+            flex-grow: 1;
+            margin-right: 15px;
+        }
+
+        .sentiment-badge {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .sentiment-badge.positive {
+            background: #e8f5e9;
+            color: #2ecc71;
+        }
+
+        .sentiment-badge.negative {
+            background: #ffebee;
+            color: #e74c3c;
+        }
+
+        .sentiment-badge.neutral {
+            background: #e3f2fd;
+            color: #3498db;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Analisis Sentimen Komentar Instagram</h1>
+        </header>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('dashboard')">Dashboard</div>
+            <div class="tab" onclick="switchTab('analysis')">Analisis</div>
+            <div class="tab" onclick="switchTab('comments')">Daftar Komentar</div>
+        </div>
+
+        <div id="dashboard" class="tab-content active">
+            <div class="metrics">
+                <div class="metric-card">
+                    <h3>Total Komentar</h3>
+                    <div class="metric-value" id="total-comments">0</div>
+                </div>
+                <div class="metric-card">
+                    <h3>Positif</h3>
+                    <div class="metric-value positive" id="positive-count">0</div>
+                </div>
+                <div class="metric-card">
+                    <h3>Netral</h3>
+                    <div class="metric-value neutral" id="neutral-count">0</div>
+                </div>
+                <div class="metric-card">
+                    <h3>Negatif</h3>
+                    <div class="metric-value negative" id="negative-count">0</div>
+                </div>
+                <div class="metric-card">
+                    <h3>Sedih</h3>
+                    <div class="metric-value" style="color:#6c3483" id="sad-count">0</div>
+                </div>
+                <div class="metric-card">
+                    <h3>Marah</h3>
+                    <div class="metric-value" style="color:#d35400" id="angry-count">0</div>
+                </div>
+                <div class="metric-card">
+                    <h3>Takut</h3>
+                    <div class="metric-value" style="color:#16a085" id="fear-count">0</div>
+                </div>
+            </div>
+
+            <div class="charts">
+                <div class="chart-container">
+                    <div id="pie-chart"></div>
+                </div>
+                <div class="chart-container">
+                    <div id="bar-chart"></div>
+                </div>
+                <div class="chart-container">
+                    <div id="pie-sedih"></div>
+                </div>
+                <div class="chart-container">
+                    <div id="pie-marah"></div>
+                </div>
+                <div class="chart-container">
+                    <div id="pie-takut"></div>
+                </div>
+            </div>
+
+            <div class="wordcloud-container">
+                <div class="wordcloud">
+                    <h3>Wordcloud Positif</h3>
+                    <img id="wordcloud-positive" src="" alt="Wordcloud Positif">
+                </div>
+                <div class="wordcloud">
+                    <h3>Wordcloud Netral</h3>
+                    <img id="wordcloud-neutral" src="" alt="Wordcloud Netral">
+                </div>
+                <div class="wordcloud">
+                    <h3>Wordcloud Negatif</h3>
+                    <img id="wordcloud-negative" src="" alt="Wordcloud Negatif">
+                </div>
+                <div class="wordcloud">
+                    <h3>Wordcloud Sedih</h3>
+                    <img id="wordcloud-sedih" src="" alt="Wordcloud Sedih">
+                </div>
+                <div class="wordcloud">
+                    <h3>Wordcloud Marah</h3>
+                    <img id="wordcloud-marah" src="" alt="Wordcloud Marah">
+                </div>
+                <div class="wordcloud">
+                    <h3>Wordcloud Takut</h3>
+                    <img id="wordcloud-takut" src="" alt="Wordcloud Takut">
+                </div>
+            </div>
+        </div>
+
+        <div id="analysis" class="tab-content">
+            <div class="analysis-section">
+                <div class="input-group">
+                    <textarea id="comment-input" placeholder="Masukkan komentar Instagram..."></textarea>
+                </div>
+                <button onclick="analyzeComment()">Analisis Sentimen</button>
+                <div id="result" class="result"></div>
+            </div>
+        </div>
+
+        <div id="comments" class="tab-content">
+            <div class="comments-section">
+                <h2>Daftar Komentar</h2>
+                <div class="comment-list" id="comment-list">
+                    <!-- Komentar akan dimuat secara dinamis di sini -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            document.querySelector(`.tab[onclick="switchTab('${tabName}')"]`).classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+
+            if (tabName === 'comments') {
+                loadComments();
+            }
+        }
+
+        function analyzeComment() {
+            const comment = document.getElementById('comment-input').value.trim();
+            if (!comment) {
+                alert('Mohon masukkan komentar terlebih dahulu');
+                return;
+            }
+
+            fetch('/api/analyze', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ comment })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const resultDiv = document.getElementById('result');
+                resultDiv.className = `result ${data.sentiment.toLowerCase()}`;
+                resultDiv.textContent = `Sentimen: ${data.sentiment}`;
+                resultDiv.style.display = 'block';
+                
+                // Refresh visualizations
+                loadVisualizations();
+                loadComments();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Terjadi kesalahan saat menganalisis komentar');
+            });
+        }
+
+        function loadComments() {
+            fetch('/api/comments')
+                .then(response => response.json())
+                .then(data => {
+                    const commentList = document.getElementById('comment-list');
+                    commentList.innerHTML = '';
+                    
+                    data.forEach(comment => {
+                        const commentElement = document.createElement('div');
+                        commentElement.className = 'comment-item';
+                        commentElement.innerHTML = `
+                            <div class="comment-text">${comment.text}</div>
+                            <div class="sentiment-badge ${comment.sentiment.toLowerCase()}">${comment.sentiment}</div>
+                        `;
+                        commentList.appendChild(commentElement);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+
+        function loadVisualizations() {
+            fetch('/api/visualizations')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.pie_chart) {
+                        const pieData = JSON.parse(data.pie_chart).data[0];
+                        console.log('Pie chart labels:', pieData.labels);
+                        console.log('Pie chart values:', pieData.values);
+                        Plotly.newPlot('pie-chart', JSON.parse(data.pie_chart));
+                    }
+                    if (data.bar_chart) {
+                        Plotly.newPlot('bar-chart', JSON.parse(data.bar_chart));
+                    }
+                    if (data.wordcloud_positive) {
+                        document.getElementById('wordcloud-positive').src = `data:image/png;base64,${data.wordcloud_positive}`;
+                    }
+                    if (data.wordcloud_neutral) {
+                        document.getElementById('wordcloud-neutral').src = `data:image/png;base64,${data.wordcloud_neutral}`;
+                    }
+                    if (data.wordcloud_negative) {
+                        document.getElementById('wordcloud-negative').src = `data:image/png;base64,${data.wordcloud_negative}`;
+                    }
+                    if (data.wordcloud_sedih) {
+                        document.getElementById('wordcloud-sedih').src = `data:image/png;base64,${data.wordcloud_sedih}`;
+                    }
+                    if (data.wordcloud_marah) {
+                        document.getElementById('wordcloud-marah').src = `data:image/png;base64,${data.wordcloud_marah}`;
+                    }
+                    if (data.wordcloud_takut) {
+                        document.getElementById('wordcloud-takut').src = `data:image/png;base64,${data.wordcloud_takut}`;
+                    }
+                    if (data.pie_sedih) {
+                        Plotly.newPlot('pie-sedih', JSON.parse(data.pie_sedih));
+                    }
+                    if (data.pie_marah) {
+                        Plotly.newPlot('pie-marah', JSON.parse(data.pie_marah));
+                    }
+                    if (data.pie_takut) {
+                        Plotly.newPlot('pie-takut', JSON.parse(data.pie_takut));
+                    }
+
+                    // Update metrics
+                    const counts = data.sentiment_counts;
+                    const positif = counts.Positif || 0;
+                    const netral = counts.Netral || 0;
+                    const negatif = counts.Negatif || 0;
+                    const sedih = counts.Sedih || 0;
+                    const marah = counts.Marah || 0;
+                    const takut = counts.Takut || 0;
+                    document.getElementById('total-comments').textContent = positif + netral + negatif + sedih + marah + takut;
+                    document.getElementById('positive-count').textContent = positif;
+                    document.getElementById('neutral-count').textContent = netral;
+                    document.getElementById('negative-count').textContent = negatif;
+                    document.getElementById('sad-count').textContent = sedih;
+                    document.getElementById('angry-count').textContent = marah;
+                    document.getElementById('fear-count').textContent = takut;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+
+        // Load initial visualizations and comments
+        loadVisualizations();
+        loadComments();
+    </script>
+</body>
+</html>
