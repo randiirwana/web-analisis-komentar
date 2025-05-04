@@ -10,3 +10,5 @@ numpy
 textblob
 Sastrawi
 selenium
+gunicorn
+waitress
